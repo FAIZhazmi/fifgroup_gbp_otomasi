@@ -31,6 +31,7 @@ from django.views import View
 from gbp.forms import DataTableFilterForm, UpdateStatusForm
 from gbp.models import FetchRun, LocationSnapshot, ReconciliationJob, ReconciliationResult
 from gbp.services import export_service, history_service, reconciliation_service, dashboard_service
+from gbp.supabase_client import get_supabase_client
 from gbp.utils import ALL_STATUSES, PAGE_SIZE, STATUS_META, get_status_meta
 
 log = logging.getLogger("gbp.views")

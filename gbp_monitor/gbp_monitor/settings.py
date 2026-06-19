@@ -119,6 +119,10 @@ GBP_TOKEN_PATH = env(
 )
 GBP_DEFAULT_ACCOUNT_ID = env("GBP_DEFAULT_ACCOUNT_ID", default="")
 
+# ── Supabase Config ───────────────────────────────────────────────────
+SUPABASE_URL = env("SUPABASE_URL", default="")
+SUPABASE_KEY = env("SUPABASE_KEY", default="")
+
 # ── Logging ───────────────────────────────────────────────────────────
 _LOGS_DIR = BASE_DIR / "logs"
 _LOGS_DIR.mkdir(exist_ok=True)
