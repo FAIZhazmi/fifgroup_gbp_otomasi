@@ -176,8 +176,18 @@ class MapView(View):
             return render(request, self.template_name, {**ctx, "no_data": True})
 
         run_id = ctx["sel_run_id"]
-        # Ambil mode peta yang sedang aktif (status atau network)
+        # Ambil mode peta: status, network, atau coverage
         selected_mode = request.GET.get("mode", "status")
+
+        # ══════════════════════════════════════════════════════════
+        # MODE: BRANCH COVERAGE
+        # ══════════════════════════════════════════════════════════
+        if selected_mode == "coverage":
+            return self._handle_coverage_mode(request, ctx, run_id)
+
+        # ══════════════════════════════════════════════════════════
+        # MODE: STATUS / NETWORK (existing — tidak diubah)
+        # ══════════════════════════════════════════════════════════
 
         # Logika Filter Eksklusif:
         # Jika mode status, terapkan filter status saja (semua network muncul)
@@ -352,6 +362,69 @@ class MapView(View):
                 ("Lainnya", "#94a3b8", "text-slate-600"),
             ],
             "coord_issues": coord_issues,
+        })
+        return render(request, self.template_name, ctx)
+
+    # ── Coverage Mode Handler ──────────────────────────────────────
+    def _handle_coverage_mode(self, request, ctx, run_id):
+        """Handle Branch Coverage Mode: grouping, map, summary, detail."""
+        from gbp.services import map_coverage_service as cov_svc
+
+        branch_prefix = request.GET.get("branch_prefix", "").strip()
+
+        try:
+            result = cov_svc.build_branch_coverage_groups(run_id)
+            coverage_map_html = cov_svc.build_branch_coverage_map(result, selected_branch_prefix=branch_prefix or None)
+            coverage_summary = cov_svc.calculate_branch_coverage_summary(result)
+
+            # Build branch list for dropdown
+            branch_list = []
+            for g in result.get("groups", []):
+                b = g["branch"]
+                branch_list.append({
+                    "prefix": b["prefix"],
+                    "name": b["name"],
+                    "area": b["area"],
+                    "total_covered": g["summary"]["total"],
+                    "color": g["color"],
+                })
+
+            # Selected branch detail
+            selected_branch_detail = None
+            if branch_prefix:
+                selected_branch_detail = cov_svc.get_selected_branch_detail(result, branch_prefix)
+
+            # Warnings
+            coverage_warnings = {
+                "duplicate_prefixes": result.get("duplicate_prefixes", []),
+                "unmapped": result.get("unmapped", []),
+                "invalid_store_codes": result.get("invalid_store_codes", []),
+                "no_coord_networks": result.get("no_coord_networks", []),
+                "has_warnings": bool(
+                    result.get("duplicate_prefixes")
+                    or result.get("unmapped")
+                    or result.get("invalid_store_codes")
+                    or result.get("no_coord_networks")
+                ),
+            }
+
+        except Exception as exc:
+            log.exception("Error building branch coverage data")
+            coverage_map_html = ""
+            coverage_summary = {}
+            branch_list = []
+            selected_branch_detail = None
+            coverage_warnings = {"has_warnings": False}
+            messages.error(request, f"Gagal membangun data coverage: {exc}")
+
+        ctx.update({
+            "selected_mode": "coverage",
+            "coverage_map_html": coverage_map_html,
+            "coverage_summary": coverage_summary,
+            "branch_list": branch_list,
+            "selected_branch_prefix": branch_prefix,
+            "selected_branch_detail": selected_branch_detail,
+            "coverage_warnings": coverage_warnings,
         })
         return render(request, self.template_name, ctx)
 

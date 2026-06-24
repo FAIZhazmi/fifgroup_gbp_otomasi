@@ -191,6 +191,43 @@ Cocok dijalankan via **Task Scheduler Windows** atau **cron**.
 - Peta interaktif (Folium) dengan marker berwarna per status
 - Filter status
 - Tabel lokasi dengan koordinat bermasalah
+- **3 Mode Tampilan:**
+  - **Berdasarkan Status** — Marker berwarna sesuai status verifikasi (Verified, Duplicate, Suspended, Need Verification)
+  - **Berdasarkan Jenis Network** — Marker berwarna sesuai tipe network (Cabang, Pos, Kios/Subkios, Lainnya)
+  - **Branch Coverage Mode** — Visualisasi coverage cabang terhadap Pos, Kios, dan Subkios
+
+### Branch Coverage Mode
+
+Mode ini menampilkan coverage setiap cabang terhadap network di bawahnya (Pos, Kios, Subkios).
+
+**Logic Coverage:**
+- Coverage ditentukan berdasarkan **3 angka pertama** dari `store_code` (prefix)
+- Jika cabang dan Pos/Kios/Subkios memiliki prefix yang sama, mereka berada dalam satu coverage group
+- Contoh: Cabang `101001` meng-cover Pos `101101` dan Kios `101201` karena prefix sama: `101`
+- Jenis network (Cabang/Pos/Kios/Subkios) dibedakan dari kolom `NETWORK` di master data (bukan dari store code)
+
+**Visual Coverage:**
+- Setiap cabang diberi warna overlay yang berbeda
+- Jika coverage group memiliki ≥3 titik koordinat → polygon convex hull
+- Jika coverage group hanya memiliki 1–2 titik → circle buffer (radius 3km)
+- **Penting:** Area coverage adalah estimasi visual berdasarkan titik network, bukan batas wilayah administratif resmi
+
+**Fitur:**
+- Summary cards: Total Cabang, Pos, Kios, Subkios, Average Coverage
+- Dropdown pilih cabang → tampilkan child markers dan detail panel
+- Detail panel: jumlah network per jenis, status verifikasi, tabel network ter-cover
+- Warning untuk: duplicate branch prefix, unmapped network, invalid store code
+
+**URL Parameter:**
+```
+/map/?mode=coverage                        # Semua cabang
+/map/?mode=coverage&branch_prefix=101      # Detail cabang dengan prefix 101
+```
+
+**Service:**
+- Logic grouping berada di `gbp/services/map_coverage_service.py`
+- Tidak ada field baru `category` — menggunakan kolom `network` dari `MasterLocation`
+
 
 ### Update Status Verifikasi
 - Ambil data terbaru dari GBP API
@@ -250,7 +287,8 @@ gbp_monitor/
 │   │   ├── reconciliation_service.py  ← Simpan ke Supabase
 │   │   ├── export_service.py
 │   │   ├── dashboard_service.py       ← Agregasi dashboard (Master + Snapshot)
-│   │   └── master_update_service.py   ← Import CSV → MasterLocation
+│   │   ├── master_update_service.py   ← Import CSV → MasterLocation
+│   │   └── map_coverage_service.py    ← Branch Coverage Mode logic
 │   │
 │   ├── management/commands/
 │   │   ├── fetch_gbp_status.py

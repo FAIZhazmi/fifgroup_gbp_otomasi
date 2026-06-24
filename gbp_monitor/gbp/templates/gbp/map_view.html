@@ -106,9 +106,9 @@
   }
 
   /* Folium full height fix */
-  #map-status, #map-network { position: absolute; inset: 0; width: 100%; height: 100%; }
-  #map-status iframe, #map-network iframe,
-  #map-status .folium-map, #map-network .folium-map {
+  #map-status, #map-network, #map-coverage { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #map-status iframe, #map-network iframe, #map-coverage iframe,
+  #map-status .folium-map, #map-network .folium-map, #map-coverage .folium-map {
     width: 100% !important;
     height: 100% !important;
     border: 0;
@@ -116,6 +116,58 @@
   }
   /* Ensure leaflet controls appear above sidebar */
   .leaflet-top, .leaflet-bottom { z-index: 400 !important; }
+
+  /* ── Coverage summary card ── */
+  .cov-card {
+    background: white;
+    border: 1px solid #E2E8F0;
+    border-radius: 16px;
+    padding: 16px 20px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .cov-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+  }
+
+  /* ── Coverage filter tab ── */
+  .cov-filter-tab {
+    padding: 6px 16px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid #E2E8F0;
+    background: white;
+    color: #64748B;
+    transition: all 0.15s;
+  }
+  .cov-filter-tab:hover { border-color: #7c3aed; color: #5b21b6; }
+  .cov-filter-tab.active {
+    background: linear-gradient(135deg, #7c3aed, #5b21b6);
+    color: white;
+    border-color: #7c3aed;
+  }
+
+  /* ── Coverage detail table ── */
+  .cov-table th {
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #94A3B8;
+    background: #F8FAFC;
+    border-bottom: 2px solid #E2E8F0;
+  }
+  .cov-table td {
+    padding: 10px 16px;
+    font-size: 13px;
+    color: #334155;
+    border-bottom: 1px solid #F1F5F9;
+  }
+  .cov-table tr:hover td { background: rgba(124, 58, 237, 0.03); }
 </style>
 {% endblock %}
 
@@ -147,6 +199,60 @@
   <p class="mt-1 text-sm text-slate-500 ml-10">Persebaran lokasi GBP berdasarkan koordinat</p>
 </div>
 
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- MODE: COVERAGE — Summary Cards (above map, full width)    -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+{% if selected_mode == "coverage" and coverage_summary %}
+<!-- Coverage Note -->
+<div class="glass-card rounded-2xl px-5 py-3 mb-4 flex items-start gap-3">
+  <div class="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5" style="background:rgba(124,58,237,0.12);">
+    <svg class="w-3.5 h-3.5 text-violet-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/>
+    </svg>
+  </div>
+  <div>
+    <p class="text-sm font-semibold text-slate-700">Branch Coverage Mode</p>
+    <p class="text-xs text-slate-500 mt-0.5">Coverage dihitung berdasarkan 3 angka pertama store code dan jenis network dari kolom NETWORK master data.</p>
+  </div>
+</div>
+
+<!-- Summary Cards Row -->
+<div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3 mb-5">
+  <div class="cov-card">
+    <div class="text-2xl font-bold text-slate-800 tabular-nums">{{ coverage_summary.total_branches }}</div>
+    <div class="text-xs text-slate-500 font-medium mt-1">Total Cabang</div>
+  </div>
+  <div class="cov-card">
+    <div class="text-2xl font-bold text-purple-600 tabular-nums">{{ coverage_summary.total_pos }}</div>
+    <div class="text-xs text-slate-500 font-medium mt-1">Total Pos</div>
+  </div>
+  <div class="cov-card">
+    <div class="text-2xl font-bold text-orange-600 tabular-nums">{{ coverage_summary.total_kios }}</div>
+    <div class="text-xs text-slate-500 font-medium mt-1">Total Kios</div>
+  </div>
+  <div class="cov-card">
+    <div class="text-2xl font-bold text-cyan-600 tabular-nums">{{ coverage_summary.total_subkios }}</div>
+    <div class="text-xs text-slate-500 font-medium mt-1">Total Subkios</div>
+  </div>
+  <div class="cov-card">
+    <div class="text-2xl font-bold text-violet-600 tabular-nums">{{ coverage_summary.avg_coverage }}</div>
+    <div class="text-xs text-slate-500 font-medium mt-1">Avg Coverage</div>
+  </div>
+  <div class="cov-card">
+    <div class="text-sm font-bold text-slate-800 truncate" title="{{ coverage_summary.max_coverage_branch }}">{{ coverage_summary.max_coverage_branch }}</div>
+    <div class="text-xs text-slate-500 font-medium mt-1">Coverage Terbanyak <span class="font-bold text-slate-700">({{ coverage_summary.max_coverage_count }})</span></div>
+  </div>
+  <div class="cov-card">
+    <div class="text-sm font-bold text-slate-800 truncate" title="{{ coverage_summary.max_need_verif_branch }}">{{ coverage_summary.max_need_verif_branch }}</div>
+    <div class="text-xs text-slate-500 font-medium mt-1">Need Verif Terbanyak <span class="font-bold text-amber-600">({{ coverage_summary.max_need_verif_count }})</span></div>
+  </div>
+  <div class="cov-card">
+    <div class="text-sm font-bold text-slate-800 truncate" title="{{ coverage_summary.max_suspended_branch }}">{{ coverage_summary.max_suspended_branch }}</div>
+    <div class="text-xs text-slate-500 font-medium mt-1">Suspended Terbanyak <span class="font-bold text-red-600">({{ coverage_summary.max_suspended_count }})</span></div>
+  </div>
+</div>
+{% endif %}
+
 <!-- ── Main Layout: Left Panel + Map ─────────────────── -->
 <div class="flex gap-5 items-start">
 
@@ -160,24 +266,33 @@
         <input type="hidden" name="run_id" value="{{ sel_run_id }}">
         <input type="hidden" name="mode" id="map-mode-input" value="{{ selected_mode }}">
 
-        <!-- Toggle buttons (full-width in left panel) -->
+        <!-- Toggle buttons (3 modes) -->
         <div class="map-toggle-wrap flex flex-col gap-0.5 p-1 rounded-xl mb-4">
           <button type="button" onclick="toggleMap('status')" id="btn-status"
-            class="map-toggle-btn-active w-full px-3 py-2 text-xs rounded-lg transition-all text-left flex items-center gap-2">
+            class="map-toggle-btn-{% if selected_mode == 'status' %}active{% else %}inactive{% endif %} w-full px-3 py-2 text-xs rounded-lg transition-all text-left flex items-center gap-2">
             <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
             Berdasarkan Status
           </button>
           <button type="button" onclick="toggleMap('network')" id="btn-network"
-            class="map-toggle-btn-inactive w-full px-3 py-2 text-xs rounded-lg transition-all text-left flex items-center gap-2">
+            class="map-toggle-btn-{% if selected_mode == 'network' %}active{% else %}inactive{% endif %} w-full px-3 py-2 text-xs rounded-lg transition-all text-left flex items-center gap-2">
             <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/>
             </svg>
             Berdasarkan Jenis Network
           </button>
+          <button type="button" onclick="switchToCoverage()" id="btn-coverage"
+            class="map-toggle-btn-{% if selected_mode == 'coverage' %}active{% else %}inactive{% endif %} w-full px-3 py-2 text-xs rounded-lg transition-all text-left flex items-center gap-2">
+            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5M3.75 3v18h16.5V3H3.75zm3.75 3.75h3v3h-3v-3zm6.75 0h3v3h-3v-3zm-6.75 6h3v3h-3v-3zm6.75 0h3v3h-3v-3z"/>
+            </svg>
+            Branch Coverage
+          </button>
         </div>
 
+        <!-- ═══ Standard Mode Panels ═══ -->
+        {% if selected_mode != "coverage" %}
         <!-- Filter Status -->
         <div id="filter-status-container">
           <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Filter Status</p>
@@ -214,10 +329,32 @@
           </div>
           <button type="submit" class="apply-btn mt-4">Terapkan Filter</button>
         </div>
+        {% endif %}
 
       </form>
+
+      <!-- ═══ Coverage Mode: Branch Selector ═══ -->
+      {% if selected_mode == "coverage" %}
+      <form method="GET" id="coverage-branch-form">
+        <input type="hidden" name="run_id" value="{{ sel_run_id }}">
+        <input type="hidden" name="mode" value="coverage">
+        <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Pilih Cabang</p>
+        <select name="branch_prefix" id="branch-select"
+                onchange="document.getElementById('coverage-branch-form').submit()"
+                class="w-full px-3 py-2.5 text-sm rounded-xl border border-slate-200 bg-white focus:border-violet-400 focus:ring-2 focus:ring-violet-100 outline-none transition-all">
+          <option value="">— Semua Cabang —</option>
+          {% for b in branch_list %}
+          <option value="{{ b.prefix }}" {% if b.prefix == selected_branch_prefix %}selected{% endif %}>
+            {{ b.name }} ({{ b.prefix }}) — {{ b.total_covered }} network
+          </option>
+          {% endfor %}
+        </select>
+      </form>
+      {% endif %}
     </div>
 
+    <!-- ═══ Standard Mode Stats & Legend ═══ -->
+    {% if selected_mode != "coverage" %}
     <!-- 2. Stat Cards -->
     <div class="glass-card rounded-2xl p-4">
       <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Statistik Peta</p>
@@ -282,16 +419,64 @@
         <div class="flex items-center gap-2.5 text-sm text-slate-700"><span class="legend-dot" style="background:#94a3b8;"></span>Lainnya</div>
       </div>
     </div>
+    {% endif %}
+
+    <!-- ═══ Coverage Mode: Legend & Info ═══ -->
+    {% if selected_mode == "coverage" %}
+    <div class="glass-card rounded-2xl p-4">
+      <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Legenda Coverage</p>
+      <div class="flex flex-col gap-2">
+        {% for b in branch_list|slice:":12" %}
+        <div class="flex items-center gap-2.5 text-xs text-slate-700">
+          <span class="legend-dot flex-shrink-0" style="background:{{ b.color }};"></span>
+          <span class="truncate" title="{{ b.name }}">{{ b.name }} ({{ b.prefix }})</span>
+        </div>
+        {% endfor %}
+        {% if branch_list|length > 12 %}
+        <div class="text-xs text-slate-400 mt-1">+{{ branch_list|length|add:"-12" }} cabang lainnya</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="glass-card rounded-2xl p-4">
+      <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Catatan</p>
+      <p class="text-xs text-slate-500 leading-relaxed">
+        Area coverage pada map merupakan estimasi visual berdasarkan titik network dan kesamaan prefix store code, bukan batas wilayah administratif resmi.
+      </p>
+    </div>
+    {% endif %}
 
   </div>
 
   <!-- ────────── RIGHT: MAP GLOBE AREA ────────── -->
   <div class="flex-1 min-w-0">
 
-    {% if map_html %}
-    <!-- Flat Map Card -->
+    {% if selected_mode == "coverage" %}
+    <!-- ═══ COVERAGE MAP ═══ -->
+    {% if coverage_map_html %}
     <div class="glass-card rounded-2xl overflow-hidden" style="height:620px; position: relative;">
-      <!-- Map containers -->
+      <div style="position: relative; width: 100%; height: 100%;">
+        <div id="map-coverage" style="position: relative; width: 100%; height: 100%;">
+          {{ coverage_map_html|safe }}
+        </div>
+      </div>
+    </div>
+    {% else %}
+    <div class="glass-card rounded-2xl flex flex-col items-center justify-center text-center" style="height:620px;">
+      <div class="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style="background:linear-gradient(135deg,#ede9fe,#ddd6fe);">
+        <svg class="w-7 h-7 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
+        </svg>
+      </div>
+      <p class="text-sm font-semibold text-slate-600">Tidak ada data coverage yang bisa ditampilkan</p>
+      <p class="text-xs text-slate-400 mt-1">Pastikan master data memiliki cabang dengan koordinat valid</p>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- ═══ STANDARD MAP (Status / Network) ═══ -->
+    {% if map_html %}
+    <div class="glass-card rounded-2xl overflow-hidden" style="height:620px; position: relative;">
       <div style="position: relative; width: 100%; height: 100%;">
         <div id="map-status" style="position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1;">
           {{ map_html|safe }}
@@ -301,7 +486,6 @@
         </div>
       </div>
     </div>
-
     {% else %}
     <div class="glass-card rounded-2xl flex flex-col items-center justify-center text-center" style="height:620px;">
       <div class="w-14 h-14 rounded-2xl flex items-center justify-center mb-4" style="background:linear-gradient(135deg,#ede9fe,#ddd6fe);">
@@ -313,12 +497,241 @@
       <p class="text-xs text-slate-400 mt-1">{{ without_coords_count }} lokasi tidak memiliki koordinat</p>
     </div>
     {% endif %}
+    {% endif %}
 
   </div>
 </div>
 
-<!-- ── Masalah Koordinat — FULL WIDTH (di luar kolom) ─── -->
-{% if coord_issues %}
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- COVERAGE DETAIL PANEL (below map, full width)              -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+{% if selected_mode == "coverage" and selected_branch_detail %}
+<div class="glass-card rounded-2xl overflow-hidden mt-5">
+  <!-- Header -->
+  <div class="px-6 py-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center gap-4">
+    <div class="flex items-center gap-3 flex-1">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:{{ selected_branch_detail.color }}20;">
+        <div class="w-4 h-4 rounded-full" style="background:{{ selected_branch_detail.color }};"></div>
+      </div>
+      <div>
+        <h3 class="text-base font-bold text-slate-800">{{ selected_branch_detail.branch.name }}</h3>
+        <p class="text-xs text-slate-500">
+          Prefix: <span class="font-mono font-bold" style="color:{{ selected_branch_detail.color }}">{{ selected_branch_detail.branch.prefix }}</span>
+          · Area: {{ selected_branch_detail.branch.area|default:"—" }}
+          · Store Code: <span class="font-mono">{{ selected_branch_detail.branch.store_code }}</span>
+        </p>
+      </div>
+    </div>
+    {% if selected_branch_detail.manual_review %}
+    <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-50 border border-red-200">
+      <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+      </svg>
+      <span class="text-xs font-semibold text-red-700">Manual Review — Prefix ini memiliki lebih dari 1 cabang</span>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Summary Stats -->
+  <div class="px-6 py-4 border-b border-slate-50 bg-slate-50/50">
+    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-4">
+      <div>
+        <div class="text-xs text-slate-400 font-semibold uppercase">Total Network</div>
+        <div class="text-xl font-bold text-slate-800 tabular-nums mt-1">{{ selected_branch_detail.summary.total }}</div>
+      </div>
+      <div>
+        <div class="text-xs text-slate-400 font-semibold uppercase">Pos</div>
+        <div class="text-xl font-bold text-purple-600 tabular-nums mt-1">{{ selected_branch_detail.summary.pos }}</div>
+      </div>
+      <div>
+        <div class="text-xs text-slate-400 font-semibold uppercase">Kios</div>
+        <div class="text-xl font-bold text-orange-600 tabular-nums mt-1">{{ selected_branch_detail.summary.kios }}</div>
+      </div>
+      <div>
+        <div class="text-xs text-slate-400 font-semibold uppercase">Subkios</div>
+        <div class="text-xl font-bold text-cyan-600 tabular-nums mt-1">{{ selected_branch_detail.summary.subkios }}</div>
+      </div>
+      <div>
+        <div class="text-xs text-slate-400 font-semibold uppercase">Verification Rate</div>
+        <div class="text-xl font-bold text-emerald-600 tabular-nums mt-1">{{ selected_branch_detail.summary.verification_rate }}%</div>
+      </div>
+    </div>
+    <!-- Status breakdown -->
+    <div class="flex flex-wrap gap-3 mt-4">
+      <span class="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200">
+        ✅ {{ selected_branch_detail.summary.verified }} Verified
+      </span>
+      <span class="inline-flex items-center gap-1.5 text-xs font-medium text-slate-600 bg-slate-50 px-3 py-1.5 rounded-full border border-slate-200">
+        ⚪ {{ selected_branch_detail.summary.need_verification }} Need Verification
+      </span>
+      <span class="inline-flex items-center gap-1.5 text-xs font-medium text-gray-600 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-200">
+        ❓ {{ selected_branch_detail.summary.unverified }} Unverified
+      </span>
+      <span class="inline-flex items-center gap-1.5 text-xs font-medium text-red-700 bg-red-50 px-3 py-1.5 rounded-full border border-red-200">
+        🚫 {{ selected_branch_detail.summary.suspended }} Suspended
+      </span>
+      <span class="inline-flex items-center gap-1.5 text-xs font-medium text-amber-700 bg-amber-50 px-3 py-1.5 rounded-full border border-amber-200">
+        ⚠️ {{ selected_branch_detail.summary.duplicate }} Duplicate
+      </span>
+    </div>
+  </div>
+
+  <!-- Network Filter Tabs -->
+  <div class="px-6 pt-4 pb-2 flex gap-2 flex-wrap">
+    <button onclick="filterCoverageTable('all')" class="cov-filter-tab active" data-filter="all">All ({{ selected_branch_detail.summary.total }})</button>
+    <button onclick="filterCoverageTable('Pos')" class="cov-filter-tab" data-filter="Pos">Pos ({{ selected_branch_detail.summary.pos }})</button>
+    <button onclick="filterCoverageTable('Kios')" class="cov-filter-tab" data-filter="Kios">Kios ({{ selected_branch_detail.summary.kios }})</button>
+    <button onclick="filterCoverageTable('Subkios')" class="cov-filter-tab" data-filter="Subkios">Subkios ({{ selected_branch_detail.summary.subkios }})</button>
+  </div>
+
+  <!-- Coverage Table -->
+  <div class="overflow-x-auto">
+    <table class="w-full cov-table" id="coverage-detail-table">
+      <thead>
+        <tr>
+          <th>Store Code</th>
+          <th>Nama Network</th>
+          <th>Jenis Network</th>
+          <th>Status</th>
+          <th>Alamat</th>
+          <th>Koordinat</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for net in selected_branch_detail.covered_networks %}
+        <tr data-network-type="{{ net.network }}">
+          <td class="font-mono text-xs text-slate-500">{{ net.store_code|default:"—" }}</td>
+          <td class="font-medium text-slate-800">{{ net.name|default:"—" }}</td>
+          <td>{% include "gbp/components/network_badge.html" with network=net.network %}</td>
+          <td>{% include "gbp/components/status_badge.html" with status=net.status %}</td>
+          <td class="text-xs text-slate-500 max-w-xs truncate" title="{{ net.address }}">{{ net.address|default:"—"|truncatechars:50 }}</td>
+          <td class="text-xs font-mono text-slate-400">
+            {% if net.has_coordinates %}
+            {{ net.latitude|floatformat:5 }}, {{ net.longitude|floatformat:5 }}
+            {% else %}
+            <span class="text-amber-500">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-center py-8 text-slate-400 text-sm">Tidak ada network yang ter-cover oleh cabang ini</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- COVERAGE WARNINGS (below detail panel)                     -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+{% if selected_mode == "coverage" and coverage_warnings.has_warnings %}
+<div class="mt-5 space-y-4">
+
+  <!-- Duplicate Branch Prefix -->
+  {% if coverage_warnings.duplicate_prefixes %}
+  <div class="glass-card rounded-2xl overflow-hidden">
+    <div class="px-5 py-4 flex items-center gap-2 border-b border-red-100/60">
+      <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background:rgba(220,38,38,0.1);">
+        <svg class="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+        </svg>
+      </div>
+      <h3 class="text-sm font-semibold text-red-700">Duplicate Branch Prefix</h3>
+      <span class="issue-badge" style="background:rgba(254,202,202,0.8);color:#991B1B;border-color:rgba(248,113,113,0.3);">{{ coverage_warnings.duplicate_prefixes|length }} prefix</span>
+    </div>
+    <div class="px-5 py-3">
+      <p class="text-xs text-slate-500 mb-3">Prefix berikut memiliki lebih dari satu cabang. Perlu manual review untuk menentukan cabang yang benar.</p>
+      <div class="flex flex-wrap gap-2">
+        {% for dp in coverage_warnings.duplicate_prefixes %}
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-50 border border-red-200 text-xs font-semibold text-red-700">
+          Prefix {{ dp.prefix }} — {{ dp.count }} cabang
+        </span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Unmapped Networks -->
+  {% if coverage_warnings.unmapped %}
+  <div class="glass-card rounded-2xl overflow-hidden">
+    <div class="px-5 py-4 flex items-center gap-2 border-b border-amber-100/60">
+      <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background:rgba(251,191,36,0.15);">
+        <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+        </svg>
+      </div>
+      <h3 class="text-sm font-semibold text-amber-700">Unmapped Network</h3>
+      <span class="issue-badge">{{ coverage_warnings.unmapped|length }} network</span>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-slate-100">
+            <th class="px-5 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Store Code</th>
+            <th class="px-5 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Nama</th>
+            <th class="px-5 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Jenis</th>
+            <th class="px-5 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">Prefix</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-50">
+          {% for u in coverage_warnings.unmapped|slice:":20" %}
+          <tr class="hover:bg-amber-50/30 transition-colors">
+            <td class="px-5 py-3 font-mono text-xs text-slate-400">{{ u.store_code|default:"—" }}</td>
+            <td class="px-5 py-3 font-medium text-slate-700">{{ u.name|default:"—" }}</td>
+            <td class="px-5 py-3">{% include "gbp/components/network_badge.html" with network=u.network %}</td>
+            <td class="px-5 py-3 font-mono text-xs text-amber-600 font-bold">{{ u.prefix }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if coverage_warnings.unmapped|length > 20 %}
+      <div class="px-5 py-3 text-xs text-slate-400 border-t border-slate-100">
+        Menampilkan 20 dari {{ coverage_warnings.unmapped|length }} unmapped network
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Invalid Store Codes -->
+  {% if coverage_warnings.invalid_store_codes %}
+  <div class="glass-card rounded-2xl overflow-hidden">
+    <div class="px-5 py-4 flex items-center gap-2 border-b border-slate-100/60">
+      <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background:rgba(100,116,139,0.1);">
+        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+        </svg>
+      </div>
+      <h3 class="text-sm font-semibold text-slate-700">Invalid Store Code</h3>
+      <span class="issue-badge" style="background:rgba(226,232,240,0.8);color:#475569;border-color:rgba(203,213,225,0.5);">{{ coverage_warnings.invalid_store_codes|length }} network</span>
+    </div>
+    <div class="px-5 py-3">
+      <p class="text-xs text-slate-500 mb-2">Network berikut memiliki store code kosong atau kurang dari 3 digit, sehingga tidak bisa dikelompokkan ke coverage cabang.</p>
+      <div class="flex flex-wrap gap-2">
+        {% for inv in coverage_warnings.invalid_store_codes|slice:":10" %}
+        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-600">
+          {{ inv.name|default:"Unknown" }} ({{ inv.store_code|default:"kosong" }})
+        </span>
+        {% endfor %}
+        {% if coverage_warnings.invalid_store_codes|length > 10 %}
+        <span class="text-xs text-slate-400 self-center">+{{ coverage_warnings.invalid_store_codes|length|add:"-10" }} lainnya</span>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endif %}
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- STANDARD MODE — Masalah Koordinat (full width, di bawah)  -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+{% if selected_mode != "coverage" and coord_issues %}
 <div class="glass-card rounded-2xl overflow-hidden mt-5">
   <div class="px-5 py-4 flex items-center gap-2 border-b border-amber-100/60">
     <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background:rgba(251,191,36,0.15);">
@@ -358,9 +771,24 @@
 
 
 <script>
+/* ── Standard Map Toggle (status / network) ── */
 function toggleMap(mode) {
+  const currentMode = '{{ selected_mode }}';
+  if (currentMode === 'coverage') {
+    const runId = '{{ sel_run_id }}';
+    const url = new URL(window.location.href);
+    url.searchParams.set('mode', mode);
+    url.searchParams.set('run_id', runId);
+    url.searchParams.delete('status');
+    url.searchParams.delete('network');
+    url.searchParams.delete('branch_prefix');
+    window.location.href = url.toString();
+    return;
+  }
+
   const btnStatus   = document.getElementById('btn-status');
   const btnNetwork  = document.getElementById('btn-network');
+  const btnCoverage = document.getElementById('btn-coverage');
   const mapStatus   = document.getElementById('map-status');
   const mapNetwork  = document.getElementById('map-network');
   const fStatus     = document.getElementById('filter-status-container');
@@ -371,29 +799,81 @@ function toggleMap(mode) {
 
   if (modeInput) modeInput.value = mode;
 
+  // Update URL parameters client-side to keep them in sync
+  try {
+    const url = new URL(window.location.href);
+    url.searchParams.set('mode', mode);
+    window.history.pushState({}, '', url.toString());
+  } catch (e) {
+    console.error('Error updating URL', e);
+  }
+
+  // Reset all toggle buttons
+  [btnStatus, btnNetwork, btnCoverage].forEach(btn => {
+    if (btn) btn.className = btn.className.replace('map-toggle-btn-active', 'map-toggle-btn-inactive');
+  });
+
   if (mode === 'status') {
-    btnStatus.className  = 'map-toggle-btn-active w-full px-3 py-2 text-xs rounded-lg transition-all text-left flex items-center gap-2';
-    btnNetwork.className = 'map-toggle-btn-inactive w-full px-3 py-2 text-xs rounded-lg transition-all text-left flex items-center gap-2';
-    mapStatus.style.cssText  = 'position:relative; opacity:1; pointer-events:auto; z-index:1;';
-    mapNetwork.style.cssText = 'position:absolute; opacity:0; pointer-events:none; z-index:-1;';
-    fStatus.style.display  = 'block';
-    fNetwork.style.display = 'none';
+    if (btnStatus)  btnStatus.className  = btnStatus.className.replace('map-toggle-btn-inactive', 'map-toggle-btn-active');
+    if (mapStatus)  mapStatus.style.cssText  = 'position:relative; opacity:1; pointer-events:auto; z-index:1;';
+    if (mapNetwork) mapNetwork.style.cssText = 'position:absolute; opacity:0; pointer-events:none; z-index:-1;';
+    if (fStatus)  fStatus.style.display  = 'block';
+    if (fNetwork) fNetwork.style.display = 'none';
     if (lStatus)  lStatus.style.display  = 'block';
     if (lNetwork) lNetwork.style.display = 'none';
-  } else {
-    btnNetwork.className = 'map-toggle-btn-active w-full px-3 py-2 text-xs rounded-lg transition-all text-left flex items-center gap-2';
-    btnStatus.className  = 'map-toggle-btn-inactive w-full px-3 py-2 text-xs rounded-lg transition-all text-left flex items-center gap-2';
-    mapNetwork.style.cssText = 'position:relative; opacity:1; pointer-events:auto; z-index:1;';
-    mapStatus.style.cssText  = 'position:absolute; opacity:0; pointer-events:none; z-index:-1;';
-    fNetwork.style.display = 'block';
-    fStatus.style.display  = 'none';
+  } else if (mode === 'network') {
+    if (btnNetwork) btnNetwork.className = btnNetwork.className.replace('map-toggle-btn-inactive', 'map-toggle-btn-active');
+    if (mapNetwork) mapNetwork.style.cssText = 'position:relative; opacity:1; pointer-events:auto; z-index:1;';
+    if (mapStatus)  mapStatus.style.cssText  = 'position:absolute; opacity:0; pointer-events:none; z-index:-1;';
+    if (fNetwork) fNetwork.style.display = 'block';
+    if (fStatus)  fStatus.style.display  = 'none';
     if (lNetwork) lNetwork.style.display = 'block';
     if (lStatus)  lStatus.style.display  = 'none';
   }
 }
 
+/* ── Switch to Coverage Mode (page reload) ── */
+function switchToCoverage() {
+  const runId = '{{ sel_run_id }}';
+  const url = new URL(window.location.href);
+  url.searchParams.set('mode', 'coverage');
+  url.searchParams.set('run_id', runId);
+  // Remove standard mode params
+  url.searchParams.delete('status');
+  url.searchParams.delete('network');
+  url.searchParams.delete('branch_prefix');
+  window.location.href = url.toString();
+}
+
+/* ── Coverage Table Filter ── */
+function filterCoverageTable(networkType) {
+  const table = document.getElementById('coverage-detail-table');
+  if (!table) return;
+
+  const rows = table.querySelectorAll('tbody tr[data-network-type]');
+  rows.forEach(row => {
+    if (networkType === 'all' || row.dataset.networkType === networkType) {
+      row.style.display = '';
+    } else {
+      row.style.display = 'none';
+    }
+  });
+
+  // Update active tab
+  document.querySelectorAll('.cov-filter-tab').forEach(tab => {
+    tab.classList.remove('active');
+    if (tab.dataset.filter === networkType) {
+      tab.classList.add('active');
+    }
+  });
+}
+
+/* ── Init ── */
 window.addEventListener('DOMContentLoaded', () => {
-  toggleMap('{{ selected_mode }}' || 'status');
+  const mode = '{{ selected_mode }}' || 'status';
+  if (mode !== 'coverage') {
+    toggleMap(mode);
+  }
 });
 </script>
 
